@@ -1,0 +1,8 @@
+LICENSE
+README.md
+setup.py
+midiscript/__init__.py
+midiscript.egg-info/PKG-INFO
+midiscript.egg-info/SOURCES.txt
+midiscript.egg-info/dependency_links.txt
+midiscript.egg-info/top_level.txt
