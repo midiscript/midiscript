@@ -17,7 +17,7 @@ def test_time_signature_lexer():
 def test_lexer():
     lexer = Lexer("sequence main { C4 1/4 }")
     tokens = lexer.tokenize()
-    assert len(tokens) == 7
+    assert len(tokens) == 9
     assert tokens[0].type == TokenType.SEQUENCE
     assert tokens[1].type == TokenType.IDENTIFIER
     assert tokens[2].type == TokenType.LBRACE
@@ -25,6 +25,8 @@ def test_lexer():
     assert tokens[4].type == TokenType.NUMBER
     assert tokens[5].type == TokenType.SLASH
     assert tokens[6].type == TokenType.NUMBER
+    assert tokens[7].type == TokenType.RBRACE
+    assert tokens[8].type == TokenType.EOF
 
 
 def test_parser():

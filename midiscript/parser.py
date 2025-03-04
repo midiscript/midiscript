@@ -215,11 +215,17 @@ class Parser:
     def note(self) -> Note:
         note_name = self.previous().lexeme  # Get the note name from the previous token
         print(f"Found note name: {note_name}")
-        duration = self.consume(TokenType.DURATION, "Expected duration after note.")
-        print(f"Found duration: {duration.lexeme}")
+
+        # Parse duration as number/slash/number
+        numerator = self.consume(TokenType.NUMBER, "Expected duration numerator.")
+        self.consume(TokenType.SLASH, "Expected '/' in duration.")
+        denominator = self.consume(TokenType.NUMBER, "Expected duration denominator.")
+        duration = f"{numerator.lexeme}/{denominator.lexeme}"
+        print(f"Found duration: {duration}")
+
         return Note(
             name=note_name,
-            duration=duration.lexeme,
+            duration=duration,
         )
 
     def chord(self) -> Chord:
@@ -238,12 +244,23 @@ class Parser:
                     raise SyntaxError("Unexpected end of input in chord")
 
         self.consume(TokenType.RBRACKET, "Expected ']' after chord notes.")
-        duration = self.consume(TokenType.DURATION, "Expected duration after chord.")
-        return Chord(notes, duration.lexeme)
+
+        # Parse duration as number/slash/number
+        numerator = self.consume(TokenType.NUMBER, "Expected duration numerator.")
+        self.consume(TokenType.SLASH, "Expected '/' in duration.")
+        denominator = self.consume(TokenType.NUMBER, "Expected duration denominator.")
+        duration = f"{numerator.lexeme}/{denominator.lexeme}"
+
+        return Chord(notes, duration)
 
     def rest(self) -> Rest:
-        duration = self.consume(TokenType.DURATION, "Expected duration after rest.")
-        return Rest(duration.lexeme)
+        # Parse duration as number/slash/number
+        numerator = self.consume(TokenType.NUMBER, "Expected duration numerator.")
+        self.consume(TokenType.SLASH, "Expected '/' in duration.")
+        denominator = self.consume(TokenType.NUMBER, "Expected duration denominator.")
+        duration = f"{numerator.lexeme}/{denominator.lexeme}"
+
+        return Rest(duration)
 
     def sequence_ref(self) -> SequenceRef:
         return SequenceRef(self.previous().lexeme)

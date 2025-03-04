@@ -86,22 +86,8 @@ class Lexer:
 
         # Check for duration or time signature
         if self.current_char == "/":
-            # If we're after a 'time' keyword, treat as separate tokens
-            if self.last_token_type == TokenType.TIME:
-                token = Token(TokenType.NUMBER, result, self.line, start_column)
-                self.last_token_type = token.type
-                return token
-
-            # Otherwise, it's a duration
-            result += self.current_char
-            self.advance()
-
-            # Read the second number
-            while self.current_char and self.current_char.isdigit():
-                result += self.current_char
-                self.advance()
-
-            token = Token(TokenType.DURATION, result, self.line, start_column)
+            # Always return the number first
+            token = Token(TokenType.NUMBER, result, self.line, start_column)
             self.last_token_type = token.type
             return token
 
@@ -145,66 +131,66 @@ class Lexer:
         return token
 
     def get_next_token(self) -> Token:
-        while self.current_char:
-            if self.current_char.isspace() and self.current_char != "\n":
-                self.skip_whitespace()
-                continue
+        if not self.current_char:
+            return Token(TokenType.EOF, "", self.line, self.column)
 
-            if self.current_char == "\n":
-                self.advance()
-                token = Token(TokenType.NEWLINE, "\n", self.line - 1, self.column)
-                self.last_token_type = token.type
-                return token
+        self.skip_whitespace()
 
-            if (
-                self.current_char == "/"
-                and self.current + 1 < len(self.source)
-                and self.source[self.current + 1] == "/"
-            ):
-                self.skip_comment()
-                continue
+        if not self.current_char:
+            return Token(TokenType.EOF, "", self.line, self.column)
 
-            if self.current_char.isdigit():
-                return self.number()
+        start_column = self.column
 
-            if self.current_char.isalpha() or self.current_char in "#b_":
-                return self.identifier()
+        # Handle newlines
+        if self.current_char == "\n":
+            self.line += 1
+            self.column = 1
+            self.advance()
+            token = Token(TokenType.NEWLINE, "\n", self.line - 1, start_column)
+            self.last_token_type = token.type
+            return token
 
-            if self.current_char == "{":
-                self.advance()
-                token = Token(TokenType.LBRACE, "{", self.line, self.column - 1)
-                self.last_token_type = token.type
-                return token
+        # Handle numbers and durations
+        if self.current_char.isdigit():
+            return self.number()
 
-            if self.current_char == "}":
-                self.advance()
-                token = Token(TokenType.RBRACE, "}", self.line, self.column - 1)
-                self.last_token_type = token.type
-                return token
+        # Handle slash (for durations and time signatures)
+        if self.current_char == "/":
+            self.advance()
+            token = Token(TokenType.SLASH, "/", self.line, start_column)
+            self.last_token_type = token.type
+            return token
 
-            if self.current_char == "[":
-                self.advance()
-                token = Token(TokenType.LBRACKET, "[", self.line, self.column - 1)
-                self.last_token_type = token.type
-                return token
+        if self.current_char.isalpha() or self.current_char in "#b_":
+            return self.identifier()
 
-            if self.current_char == "]":
-                self.advance()
-                token = Token(TokenType.RBRACKET, "]", self.line, self.column - 1)
-                self.last_token_type = token.type
-                return token
+        if self.current_char == "{":
+            self.advance()
+            token = Token(TokenType.LBRACE, "{", self.line, self.column - 1)
+            self.last_token_type = token.type
+            return token
 
-            if self.current_char == "/":
-                self.advance()
-                token = Token(TokenType.SLASH, "/", self.line, self.column - 1)
-                self.last_token_type = token.type
-                return token
+        if self.current_char == "}":
+            self.advance()
+            token = Token(TokenType.RBRACE, "}", self.line, self.column - 1)
+            self.last_token_type = token.type
+            return token
 
-            self.error()
+        if self.current_char == "[":
+            self.advance()
+            token = Token(TokenType.LBRACKET, "[", self.line, self.column - 1)
+            self.last_token_type = token.type
+            return token
 
-        token = Token(TokenType.EOF, "", self.line, self.column)
-        self.last_token_type = token.type
-        return token
+        if self.current_char == "]":
+            self.advance()
+            token = Token(TokenType.RBRACKET, "]", self.line, self.column - 1)
+            self.last_token_type = token.type
+            return token
+
+        # If we get here, we have an invalid character
+        self.error()
+        return Token(TokenType.EOF, "", self.line, self.column)  # For type checker
 
     def tokenize(self) -> List[Token]:
         tokens: List[Token] = []
