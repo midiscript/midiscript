@@ -60,7 +60,7 @@ class Parser:
     def __init__(self, tokens: List[Token]):
         self.tokens = tokens
         self.current = 0
-        self.sequences: List[Sequence] = []
+        self.sequences: Dict[str, Sequence] = {}
 
     def error(self, message: str = "Invalid syntax") -> None:
         token = self.peek()
@@ -135,7 +135,7 @@ class Parser:
                     print("Skipping newline")
                     continue  # Skip newlines between statements
                 else:
-                    print(f"Unexpected token, advancing")
+                    print("Unexpected token, advancing")
                     self.advance()
             program.sequences.update(self.sequences)
             return program
@@ -208,7 +208,8 @@ class Parser:
         self.skip_newlines()  # Skip newlines before '}'
         self.consume(TokenType.RBRACE, "Expected '}' after sequence events.")
         print("Found closing brace")
-        self.sequences.append(Sequence(name.lexeme, events))
+        sequence = Sequence(name.lexeme, events)
+        self.sequences[name.lexeme] = sequence
         print(f"Added sequence {name.lexeme} with {len(events)} events")
 
     def note(self) -> Note:
