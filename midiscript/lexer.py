@@ -56,7 +56,9 @@ class Lexer:
             self.column = 1
         else:
             self.column += 1
-        self.current_char = self.source[self.current] if self.current < len(self.source) else None
+        self.current_char = (
+            self.source[self.current] if self.current < len(self.source) else None
+        )
         return self.current_char
 
     def skip_whitespace(self) -> None:

@@ -120,9 +120,9 @@ class Parser:
     def sequence_declaration(self) -> None:
         name = self.consume(TokenType.IDENTIFIER, "Expected sequence name.")
         self.consume(TokenType.LBRACE, "Expected '{' after sequence name.")
-        
+
         events: List[Union[Note, Chord, Rest, SequenceRef]] = []
-        
+
         while not self.check(TokenType.RBRACE) and not self.is_at_end():
             if self.match(TokenType.NOTE):
                 events.append(self.note())
@@ -140,7 +140,7 @@ class Parser:
                     )
                 else:
                     raise SyntaxError("Unexpected end of input")
-        
+
         self.consume(TokenType.RBRACE, "Expected '}' after sequence events.")
         self.sequences.append(Sequence(name.lexeme, events))
 
@@ -164,7 +164,7 @@ class Parser:
                     )
                 else:
                     raise SyntaxError("Unexpected end of input in chord")
-        
+
         self.consume(TokenType.RBRACKET, "Expected ']' after chord notes.")
         duration = self.consume(TokenType.DURATION, "Expected duration after chord.")
         return Chord(notes, duration.lexeme)
@@ -179,11 +179,9 @@ class Parser:
     def consume(self, type: TokenType, message: str) -> Token:
         if self.check(type):
             return self.advance()
-        
+
         token = self.peek()
         if token is not None:
-            raise SyntaxError(
-                f"{message} at line {token.line}, column {token.column}"
-            )
+            raise SyntaxError(f"{message} at line {token.line}, column {token.column}")
         else:
             raise SyntaxError(f"{message} at end of input")
