@@ -2,7 +2,14 @@ LICENSE
 README.md
 setup.py
 midiscript/__init__.py
+midiscript/cli.py
+midiscript/lexer.py
+midiscript/midi_generator.py
+midiscript/parser.py
 midiscript.egg-info/PKG-INFO
 midiscript.egg-info/SOURCES.txt
 midiscript.egg-info/dependency_links.txt
+midiscript.egg-info/entry_points.txt
+midiscript.egg-info/requires.txt
 midiscript.egg-info/top_level.txt
+tests/test_midiscript.py
