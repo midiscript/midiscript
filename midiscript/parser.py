@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional, Union
 from .lexer import Token, TokenType
 
@@ -48,8 +48,12 @@ class TimeSignature:
 class Program:
     tempo: Optional[TempoChange] = None
     time_signature: Optional[TimeSignature] = None
-    sequences: List[Sequence] = None
+    sequences: List[Sequence] = field(default_factory=list)
     main_sequence: Optional[str] = None
+
+    def __post_init__(self):
+        if self.sequences is None:
+            self.sequences = []
 
 
 class Parser:
@@ -58,8 +62,10 @@ class Parser:
         self.current = 0
         self.sequences: List[Sequence] = []
 
-    def error(self, message: str = "Invalid syntax"):
+    def error(self, message: str = "Invalid syntax") -> None:
         token = self.peek()
+        if token is None:
+            raise Exception(f"{message} at end of input")
         raise Exception(f"{message} at line {token.line}, column {token.column}")
 
     def advance(self) -> Token:
@@ -76,7 +82,8 @@ class Parser:
         return self.tokens[self.current - 1]
 
     def is_at_end(self) -> bool:
-        return self.peek().type == TokenType.EOF
+        token = self.peek()
+        return token is not None and token.type == TokenType.EOF
 
     def match(self, *types: TokenType) -> bool:
         for type in types:
@@ -86,13 +93,16 @@ class Parser:
         return False
 
     def check(self, type: TokenType) -> bool:
-        if self.is_at_end():
+        token = self.peek()
+        if token is None:
             return False
-        return self.peek().type == type
+        return token.type == type
 
-    def skip_newlines(self):
-        while self.peek() and self.peek().type == TokenType.NEWLINE:
+    def skip_newlines(self) -> None:
+        token = self.peek()
+        while token is not None and token.type == TokenType.NEWLINE:
             self.advance()
+            token = self.peek()
 
     def parse(self) -> List[Sequence]:
         try:
@@ -124,7 +134,7 @@ class Parser:
                 events.append(self.sequence_ref())
             else:
                 token = self.peek()
-                if token:
+                if token is not None:
                     raise SyntaxError(
                         f"Unexpected token at line {token.line}, column {token.column}"
                     )
@@ -148,7 +158,7 @@ class Parser:
                 notes.append(self.previous().lexeme)
             else:
                 token = self.peek()
-                if token:
+                if token is not None:
                     raise SyntaxError(
                         f"Expected note in chord at line {token.line}, column {token.column}"
                     )
@@ -171,7 +181,7 @@ class Parser:
             return self.advance()
         
         token = self.peek()
-        if token:
+        if token is not None:
             raise SyntaxError(
                 f"{message} at line {token.line}, column {token.column}"
             )
