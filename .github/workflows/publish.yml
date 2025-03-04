@@ -45,4 +45,4 @@ jobs:
           echo "Error: PYPI_API_TOKEN secret is not set"
           exit 1
         fi
-        twine upload dist/* 
+        twine upload dist/*
