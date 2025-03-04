@@ -3,5 +3,16 @@ Name: midiscript
 Version: 0.1.0
 Summary: Programming language for musicians
 Author: arsnovo
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Musicians
+Classifier: Topic :: Multimedia :: Sound/Audio :: MIDI
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: License :: OSI Approved :: MIT License
 Requires-Python: >=3.6
 License-File: LICENSE
+Requires-Dist: midiutil>=1.2.1
