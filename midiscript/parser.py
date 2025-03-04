@@ -60,9 +60,7 @@ class Parser:
 
     def error(self, message: str = "Invalid syntax"):
         token = self.current_token
-        raise Exception(
-            f"{message} at line {token.line}, column {token.column}"
-        )
+        raise Exception(f"{message} at line {token.line}, column {token.column}")
 
     def advance(self):
         self.current += 1
@@ -77,8 +75,7 @@ class Parser:
         return None
 
     def skip_newlines(self):
-        while (self.current_token and 
-               self.current_token.type == TokenType.NEWLINE):
+        while self.current_token and self.current_token.type == TokenType.NEWLINE:
             self.advance()
 
     def match(self, type_: TokenType) -> bool:
@@ -103,12 +100,12 @@ class Parser:
     def parse_chord(self) -> Chord:
         self.expect(TokenType.LBRACKET)
         notes = []
-        
+
         while self.current_token and self.current_token.type == TokenType.NOTE:
             notes.append(self.current_token.value)
             self.advance()
             self.skip_newlines()
-            
+
         self.expect(TokenType.RBRACKET)
         duration_token = self.expect(TokenType.DURATION)
         return Chord(notes, duration_token.value)
@@ -126,17 +123,20 @@ class Parser:
         self.expect(TokenType.SEQUENCE)
         name_token = self.expect(TokenType.IDENTIFIER)
         self.expect(TokenType.LBRACE)
-        
+
         events = []
-        while (self.current_token and 
-               self.current_token.type in 
-               (TokenType.NOTE, TokenType.LBRACKET, TokenType.REST, 
-                TokenType.IDENTIFIER, TokenType.NEWLINE)):
-            
+        while self.current_token and self.current_token.type in (
+            TokenType.NOTE,
+            TokenType.LBRACKET,
+            TokenType.REST,
+            TokenType.IDENTIFIER,
+            TokenType.NEWLINE,
+        ):
+
             if self.current_token.type == TokenType.NEWLINE:
                 self.advance()
                 continue
-                
+
             if self.current_token.type == TokenType.NOTE:
                 events.append(self.parse_note())
             elif self.current_token.type == TokenType.LBRACKET:
@@ -145,7 +145,7 @@ class Parser:
                 events.append(self.parse_rest())
             elif self.current_token.type == TokenType.IDENTIFIER:
                 events.append(self.parse_sequence_ref())
-                
+
         self.expect(TokenType.RBRACE)
         return Sequence(name_token.value, events)
 
@@ -159,19 +159,16 @@ class Parser:
         numerator_token = self.expect(TokenType.NUMBER)
         self.expect(TokenType.SLASH)
         denominator_token = self.expect(TokenType.NUMBER)
-        return TimeSignature(
-            int(numerator_token.value),
-            int(denominator_token.value)
-        )
+        return TimeSignature(int(numerator_token.value), int(denominator_token.value))
 
     def parse(self) -> Program:
         program = Program(sequences=[])
-        
+
         while self.current_token and self.current_token.type != TokenType.EOF:
             if self.current_token.type == TokenType.NEWLINE:
                 self.advance()
                 continue
-                
+
             if self.current_token.type == TokenType.TEMPO:
                 program.tempo = self.parse_tempo()
             elif self.current_token.type == TokenType.TIME:
@@ -184,5 +181,5 @@ class Parser:
                 program.main_sequence = sequence_token.value
             else:
                 self.error()
-                
-        return program 
+
+        return program
