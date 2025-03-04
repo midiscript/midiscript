@@ -35,6 +35,7 @@ jobs:
         twine check dist/*
     
     - name: Publish to PyPI
+      # This step requires PYPI_API_TOKEN to be set in repository secrets
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
