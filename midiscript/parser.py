@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict
 from .lexer import Token, TokenType
 
 
@@ -46,14 +46,14 @@ class TimeSignature:
 
 @dataclass
 class Program:
+    sequences: Dict[str, Sequence] = field(default_factory=dict)
     tempo: Optional[TempoChange] = None
     time_signature: Optional[TimeSignature] = None
-    sequences: List[Sequence] = field(default_factory=list)
     main_sequence: Optional[str] = None
 
     def __post_init__(self):
         if self.sequences is None:
-            self.sequences = []
+            self.sequences = {}
 
 
 class Parser:
@@ -106,52 +106,119 @@ class Parser:
             self.advance()
             token = self.peek()
 
-    def parse(self) -> List[Sequence]:
+    def parse(self) -> Program:
+        program = Program()
         try:
             while not self.is_at_end():
-                if self.match(TokenType.SEQUENCE):
+                self.skip_newlines()  # Skip any leading newlines
+                token = self.peek()
+                if token:
+                    print(
+                        f"Processing token: {token.type} '{token.lexeme}' at line {token.line}, column {token.column}"
+                    )
+                if self.match(TokenType.TEMPO):
+                    print("Found tempo")
+                    self.parse_tempo(program)
+                    print(
+                        f"Set tempo to {program.tempo.value if program.tempo else None}"
+                    )
+                elif self.match(TokenType.TIME):
+                    print("Found time signature")
+                    self.parse_time_signature(program)
+                elif self.match(TokenType.SEQUENCE):
+                    print("Found sequence")
                     self.sequence_declaration()
+                elif self.match(TokenType.PLAY):
+                    print("Found play")
+                    self.parse_play(program)
+                elif self.match(TokenType.NEWLINE):
+                    print("Skipping newline")
+                    continue  # Skip newlines between statements
                 else:
+                    print(f"Unexpected token, advancing")
                     self.advance()
-            return self.sequences
+            program.sequences.update(self.sequences)
+            return program
         except Exception as e:
-            # Log the error and return empty list
+            # Log the error and return empty program
             print(f"Error parsing: {str(e)}")
-            return []
+            return Program()
+
+    def parse_tempo(self, program: Program) -> None:
+        print("Parsing tempo")
+        value = self.consume(TokenType.NUMBER, "Expected tempo value.")
+        print(f"Found tempo value: {value.lexeme}")
+        program.tempo = TempoChange(int(value.lexeme))
+        self.skip_newlines()  # Skip newlines after tempo
+
+    def parse_time_signature(self, program: Program) -> None:
+        numerator = self.consume(TokenType.NUMBER, "Expected time signature numerator.")
+        self.consume(TokenType.SLASH, "Expected '/' in time signature.")
+        denominator = self.consume(
+            TokenType.NUMBER, "Expected time signature denominator."
+        )
+        program.time_signature = TimeSignature(
+            int(numerator.lexeme), int(denominator.lexeme)
+        )
+        self.skip_newlines()  # Skip newlines after time signature
+
+    def parse_play(self, program: Program) -> None:
+        sequence_name = self.consume(
+            TokenType.IDENTIFIER, "Expected sequence name after 'play'."
+        )
+        program.main_sequence = sequence_name.lexeme
+        self.skip_newlines()  # Skip newlines after play
 
     def sequence_declaration(self) -> None:
+        print("Starting sequence declaration")
         name = self.consume(TokenType.IDENTIFIER, "Expected sequence name.")
+        print(f"Found sequence name: {name.lexeme}")
+        self.skip_newlines()  # Skip newlines before '{'
         self.consume(TokenType.LBRACE, "Expected '{' after sequence name.")
+        print("Found opening brace")
+        self.skip_newlines()  # Skip newlines after '{'
 
         events: List[Union[Note, Chord, Rest, SequenceRef]] = []
 
         while not self.check(TokenType.RBRACE) and not self.is_at_end():
+            self.skip_newlines()  # Skip newlines between events
+            token = self.peek()
+            if token:
+                print(
+                    f"Processing event token: {token.type} '{token.lexeme}' at line {token.line}, column {token.column}"
+                )
             if self.match(TokenType.NOTE):
+                print("Found note")
                 events.append(self.note())
             elif self.match(TokenType.LBRACKET):
+                print("Found chord start")
                 events.append(self.chord())
             elif self.match(TokenType.REST):
+                print("Found rest")
                 events.append(self.rest())
             elif self.match(TokenType.IDENTIFIER):
+                print("Found sequence reference")
                 events.append(self.sequence_ref())
+            elif self.match(TokenType.NEWLINE):
+                print("Skipping newline")
+                continue  # Skip newlines
             else:
-                token = self.peek()
-                if token is not None:
-                    raise SyntaxError(
-                        "Unexpected token at line "
-                        f"{token.line}, column {token.column}"
-                    )
-                else:
-                    raise SyntaxError("Unexpected end of input")
+                break  # Exit the loop when we find something unexpected
 
+        self.skip_newlines()  # Skip newlines before '}'
         self.consume(TokenType.RBRACE, "Expected '}' after sequence events.")
+        print("Found closing brace")
         self.sequences.append(Sequence(name.lexeme, events))
+        print(f"Added sequence {name.lexeme} with {len(events)} events")
 
     def note(self) -> Note:
+        note_name = self.previous().lexeme  # Get the note name from the previous token
+        print(f"Found note name: {note_name}")
         duration = self.consume(TokenType.DURATION, "Expected duration after note.")
+        print(f"Found duration: {duration.lexeme}")
         return Note(
-            self.previous().lexeme,
-            duration.lexeme,
+            name=note_name,
+            duration=duration.lexeme,
         )
 
     def chord(self) -> Chord:

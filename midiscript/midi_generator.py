@@ -1,16 +1,7 @@
 from typing import Dict, Set
 from midiutil import MIDIFile  # type: ignore
 from fractions import Fraction
-from .parser import (
-    Program,
-    Note,
-    Chord,
-    Rest,
-    Sequence,
-    SequenceRef,
-    TempoChange,
-    TimeSignature,
-)
+from .parser import Note, Chord, Rest, SequenceRef, Program, Sequence
 
 
 class MIDIGenerator:
@@ -125,7 +116,7 @@ class MIDIGenerator:
         # Reset state
         self.time = 0.0
         self.midi = MIDIFile(1)
-        self.sequences = {seq.name: seq for seq in program.sequences}
+        self.sequences = program.sequences
         self.sequence_stack = set()
 
         # Set initial tempo and time signature
@@ -149,8 +140,9 @@ class MIDIGenerator:
             else:
                 raise ValueError(f"Sequence '{program.main_sequence}' not found")
         elif program.sequences:
-            # If no main sequence specified, use the first one
-            self.generate_sequence(program.sequences[0])
+            # If no main sequence specified, use the first sequence
+            first_sequence_name = next(iter(program.sequences))
+            self.generate_sequence(program.sequences[first_sequence_name])
 
         # Convert to bytes
         with open("temp.mid", "wb") as f:
