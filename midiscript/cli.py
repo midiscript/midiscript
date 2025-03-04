@@ -7,11 +7,11 @@ from .midi_generator import MIDIGenerator
 
 
 def main():
-    parser = argparse.ArgumentParser(
+    arg_parser = argparse.ArgumentParser(
         description="MidiScript - A musical programming language"
     )
-    parser.add_argument("input_file", type=str, help="Input MidiScript file")
-    parser.add_argument(
+    arg_parser.add_argument("input", help="Input MidiScript file")
+    arg_parser.add_argument(
         "-o",
         "--output",
         type=str,
@@ -19,14 +19,14 @@ def main():
         default=None,
     )
 
-    args = parser.parse_args()
+    args = arg_parser.parse_args()
 
     # Read input file
     try:
-        with open(args.input_file, "r") as f:
+        with open(args.input, "r") as f:
             source = f.read()
     except FileNotFoundError:
-        print(f"Error: Could not find file '{args.input_file}'")
+        print(f"Error: Could not find file '{args.input}'")
         sys.exit(1)
     except Exception as e:
         print(f"Error reading file: {e}")
@@ -36,7 +36,7 @@ def main():
     if args.output:
         output_file = args.output
     else:
-        input_path = Path(args.input_file)
+        input_path = Path(args.input)
         output_file = str(input_path.with_suffix(".mid"))
 
     try:
