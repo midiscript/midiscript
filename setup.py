@@ -6,7 +6,7 @@ setup(
     author="arsnovo",
     description="Programming language for musicians",
     packages=find_packages(),
-    python_requires=">=3.10",
+    python_requires=">=3.9",
     install_requires=[
         "midiutil>=1.2.1",
     ],
@@ -21,6 +21,7 @@ setup(
         "Intended Audience :: Musicians",
         "Topic :: Multimedia :: Sound/Audio :: MIDI",
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "License :: OSI Approved :: MIT License",
