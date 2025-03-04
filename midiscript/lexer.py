@@ -27,36 +27,39 @@ class TokenType(Enum):
 @dataclass
 class Token:
     type: TokenType
-    value: str
+    lexeme: str
     line: int
     column: int
 
 
 class Lexer:
-    def __init__(self, text: str):
-        self.text = text
-        self.pos = 0
+    def __init__(self, source: str):
+        self.source = source
+        self.tokens: List[Token] = []
+        self.start = 0
+        self.current = 0
         self.line = 1
         self.column = 1
-        self.current_char = self.text[0] if text else None
-        self.last_token_type = None
+        self.current_char = self.source[0] if source else None
+        self.last_token_type: Optional[TokenType] = None
 
-    def error(self):
+    def error(self) -> None:
         raise Exception(
             f"Invalid character {self.current_char} at line {self.line}, "
             f"column {self.column}"
         )
 
-    def advance(self):
-        self.pos += 1
+    def advance(self) -> Optional[str]:
+        self.current += 1
         if self.current_char == "\n":
             self.line += 1
             self.column = 1
         else:
             self.column += 1
-        self.current_char = self.text[self.pos] if self.pos < len(self.text) else None
+        self.current_char = self.source[self.current] if self.current < len(self.source) else None
+        return self.current_char
 
-    def skip_whitespace(self):
+    def skip_whitespace(self) -> None:
         while (
             self.current_char
             and self.current_char.isspace()
@@ -64,7 +67,7 @@ class Lexer:
         ):
             self.advance()
 
-    def skip_comment(self):
+    def skip_comment(self) -> None:
         while self.current_char and self.current_char != "\n":
             self.advance()
 
@@ -145,8 +148,8 @@ class Lexer:
 
             if (
                 self.current_char == "/"
-                and self.pos + 1 < len(self.text)
-                and self.text[self.pos + 1] == "/"
+                and self.current + 1 < len(self.source)
+                and self.source[self.current + 1] == "/"
             ):
                 self.skip_comment()
                 continue
@@ -196,10 +199,15 @@ class Lexer:
         return token
 
     def tokenize(self) -> List[Token]:
-        tokens = []
+        tokens: List[Token] = []
         while True:
             token = self.get_next_token()
             tokens.append(token)
             if token.type == TokenType.EOF:
                 break
         return tokens
+
+    def peek(self) -> Optional[str]:
+        if self.current >= len(self.source):
+            return None
+        return self.source[self.current]

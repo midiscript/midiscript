@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional, Union
 from .lexer import Token, TokenType
 
@@ -48,138 +48,142 @@ class TimeSignature:
 class Program:
     tempo: Optional[TempoChange] = None
     time_signature: Optional[TimeSignature] = None
-    sequences: List[Sequence] = None
+    sequences: List[Sequence] = field(default_factory=list)
     main_sequence: Optional[str] = None
+
+    def __post_init__(self):
+        if self.sequences is None:
+            self.sequences = []
 
 
 class Parser:
     def __init__(self, tokens: List[Token]):
         self.tokens = tokens
         self.current = 0
-        self.current_token = tokens[0] if tokens else None
+        self.sequences: List[Sequence] = []
 
-    def error(self, message: str = "Invalid syntax"):
-        token = self.current_token
+    def error(self, message: str = "Invalid syntax") -> None:
+        token = self.peek()
+        if token is None:
+            raise Exception(f"{message} at end of input")
         raise Exception(f"{message} at line {token.line}, column {token.column}")
 
-    def advance(self):
-        self.current += 1
-        if self.current < len(self.tokens):
-            self.current_token = self.tokens[self.current]
-        else:
-            self.current_token = None
+    def advance(self) -> Token:
+        if not self.is_at_end():
+            self.current += 1
+        return self.previous()
 
     def peek(self) -> Optional[Token]:
-        if self.current + 1 < len(self.tokens):
-            return self.tokens[self.current + 1]
-        return None
+        if self.current >= len(self.tokens):
+            return None
+        return self.tokens[self.current]
 
-    def skip_newlines(self):
-        while self.current_token and self.current_token.type == TokenType.NEWLINE:
-            self.advance()
+    def previous(self) -> Token:
+        return self.tokens[self.current - 1]
 
-    def match(self, type_: TokenType) -> bool:
-        if self.current_token and self.current_token.type == type_:
-            self.advance()
-            return True
+    def is_at_end(self) -> bool:
+        token = self.peek()
+        return token is not None and token.type == TokenType.EOF
+
+    def match(self, *types: TokenType) -> bool:
+        for type in types:
+            if self.check(type):
+                self.advance()
+                return True
         return False
 
-    def expect(self, type_: TokenType) -> Token:
-        self.skip_newlines()
-        if self.current_token and self.current_token.type == type_:
-            token = self.current_token
+    def check(self, type: TokenType) -> bool:
+        token = self.peek()
+        if token is None:
+            return False
+        return token.type == type
+
+    def skip_newlines(self) -> None:
+        token = self.peek()
+        while token is not None and token.type == TokenType.NEWLINE:
             self.advance()
-            return token
-        self.error(f"Expected {type_}, got {self.current_token.type}")
+            token = self.peek()
 
-    def parse_note(self) -> Note:
-        note_token = self.expect(TokenType.NOTE)
-        duration_token = self.expect(TokenType.DURATION)
-        return Note(note_token.value, duration_token.value)
+    def parse(self) -> List[Sequence]:
+        try:
+            while not self.is_at_end():
+                if self.match(TokenType.SEQUENCE):
+                    self.sequence_declaration()
+                else:
+                    self.advance()
+            return self.sequences
+        except Exception as e:
+            # Log the error and return empty list
+            print(f"Error parsing: {str(e)}")
+            return []
 
-    def parse_chord(self) -> Chord:
-        self.expect(TokenType.LBRACKET)
-        notes = []
-
-        while self.current_token and self.current_token.type == TokenType.NOTE:
-            notes.append(self.current_token.value)
-            self.advance()
-            self.skip_newlines()
-
-        self.expect(TokenType.RBRACKET)
-        duration_token = self.expect(TokenType.DURATION)
-        return Chord(notes, duration_token.value)
-
-    def parse_rest(self) -> Rest:
-        self.expect(TokenType.REST)
-        duration_token = self.expect(TokenType.DURATION)
-        return Rest(duration_token.value)
-
-    def parse_sequence_ref(self) -> SequenceRef:
-        token = self.expect(TokenType.IDENTIFIER)
-        return SequenceRef(token.value)
-
-    def parse_sequence(self) -> Sequence:
-        self.expect(TokenType.SEQUENCE)
-        name_token = self.expect(TokenType.IDENTIFIER)
-        self.expect(TokenType.LBRACE)
-
-        events = []
-        while self.current_token and self.current_token.type in (
-            TokenType.NOTE,
-            TokenType.LBRACKET,
-            TokenType.REST,
-            TokenType.IDENTIFIER,
-            TokenType.NEWLINE,
-        ):
-
-            if self.current_token.type == TokenType.NEWLINE:
-                self.advance()
-                continue
-
-            if self.current_token.type == TokenType.NOTE:
-                events.append(self.parse_note())
-            elif self.current_token.type == TokenType.LBRACKET:
-                events.append(self.parse_chord())
-            elif self.current_token.type == TokenType.REST:
-                events.append(self.parse_rest())
-            elif self.current_token.type == TokenType.IDENTIFIER:
-                events.append(self.parse_sequence_ref())
-
-        self.expect(TokenType.RBRACE)
-        return Sequence(name_token.value, events)
-
-    def parse_tempo(self) -> TempoChange:
-        self.expect(TokenType.TEMPO)
-        value_token = self.expect(TokenType.NUMBER)
-        return TempoChange(int(value_token.value))
-
-    def parse_time_signature(self) -> TimeSignature:
-        self.expect(TokenType.TIME)
-        numerator_token = self.expect(TokenType.NUMBER)
-        self.expect(TokenType.SLASH)
-        denominator_token = self.expect(TokenType.NUMBER)
-        return TimeSignature(int(numerator_token.value), int(denominator_token.value))
-
-    def parse(self) -> Program:
-        program = Program(sequences=[])
-
-        while self.current_token and self.current_token.type != TokenType.EOF:
-            if self.current_token.type == TokenType.NEWLINE:
-                self.advance()
-                continue
-
-            if self.current_token.type == TokenType.TEMPO:
-                program.tempo = self.parse_tempo()
-            elif self.current_token.type == TokenType.TIME:
-                program.time_signature = self.parse_time_signature()
-            elif self.current_token.type == TokenType.SEQUENCE:
-                program.sequences.append(self.parse_sequence())
-            elif self.current_token.type == TokenType.PLAY:
-                self.advance()
-                sequence_token = self.expect(TokenType.IDENTIFIER)
-                program.main_sequence = sequence_token.value
+    def sequence_declaration(self) -> None:
+        name = self.consume(TokenType.IDENTIFIER, "Expected sequence name.")
+        self.consume(TokenType.LBRACE, "Expected '{' after sequence name.")
+        
+        events: List[Union[Note, Chord, Rest, SequenceRef]] = []
+        
+        while not self.check(TokenType.RBRACE) and not self.is_at_end():
+            if self.match(TokenType.NOTE):
+                events.append(self.note())
+            elif self.match(TokenType.LBRACKET):
+                events.append(self.chord())
+            elif self.match(TokenType.REST):
+                events.append(self.rest())
+            elif self.match(TokenType.IDENTIFIER):
+                events.append(self.sequence_ref())
             else:
-                self.error()
+                token = self.peek()
+                if token is not None:
+                    raise SyntaxError(
+                        f"Unexpected token at line {token.line}, column {token.column}"
+                    )
+                else:
+                    raise SyntaxError("Unexpected end of input")
+        
+        self.consume(TokenType.RBRACE, "Expected '}' after sequence events.")
+        self.sequences.append(Sequence(name.lexeme, events))
 
-        return program
+    def note(self) -> Note:
+        duration = self.consume(TokenType.DURATION, "Expected duration after note.")
+        return Note(
+            self.previous().lexeme,
+            duration.lexeme,
+        )
+
+    def chord(self) -> Chord:
+        notes: List[str] = []
+        while not self.check(TokenType.RBRACKET) and not self.is_at_end():
+            if self.match(TokenType.NOTE):
+                notes.append(self.previous().lexeme)
+            else:
+                token = self.peek()
+                if token is not None:
+                    raise SyntaxError(
+                        f"Expected note in chord at line {token.line}, column {token.column}"
+                    )
+                else:
+                    raise SyntaxError("Unexpected end of input in chord")
+        
+        self.consume(TokenType.RBRACKET, "Expected ']' after chord notes.")
+        duration = self.consume(TokenType.DURATION, "Expected duration after chord.")
+        return Chord(notes, duration.lexeme)
+
+    def rest(self) -> Rest:
+        duration = self.consume(TokenType.DURATION, "Expected duration after rest.")
+        return Rest(duration.lexeme)
+
+    def sequence_ref(self) -> SequenceRef:
+        return SequenceRef(self.previous().lexeme)
+
+    def consume(self, type: TokenType, message: str) -> Token:
+        if self.check(type):
+            return self.advance()
+        
+        token = self.peek()
+        if token is not None:
+            raise SyntaxError(
+                f"{message} at line {token.line}, column {token.column}"
+            )
+        else:
+            raise SyntaxError(f"{message} at end of input")

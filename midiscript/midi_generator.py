@@ -1,5 +1,5 @@
-from typing import Dict, List, Optional, Set
-from midiutil import MIDIFile
+from typing import Dict, List, Optional, Set, cast
+from midiutil import MIDIFile  # type: ignore
 from fractions import Fraction
 from .parser import (
     Program,
@@ -40,8 +40,8 @@ class MIDIGenerator:
         self.current_tempo = 120
         self.ppq = 480  # Pulses per quarter note
         self.current_velocity = 100
-        self.sequences = {}  # Map of sequence names to Sequence objects
-        self.sequence_stack = set()  # Track sequence references to prevent cycles
+        self.sequences: Dict[str, Sequence] = {}
+        self.sequence_stack: Set[str] = set()
 
     def set_tempo(self, tempo: int):
         self.current_tempo = tempo
