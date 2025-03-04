@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Set, cast
+from typing import Dict, Set
 from midiutil import MIDIFile  # type: ignore
 from fractions import Fraction
 from .parser import (
@@ -76,7 +76,12 @@ class MIDIGenerator:
         velocity = note.velocity or self.current_velocity
 
         self.midi.addNote(
-            0, 0, midi_number, self.time, duration, velocity  # track  # channel
+            0,  # track
+            0,  # channel
+            midi_number,
+            self.time,
+            duration,
+            velocity
         )
         self.time += duration
 
@@ -136,7 +141,8 @@ class MIDIGenerator:
 
         if program.time_signature:
             self.set_time_signature(
-                program.time_signature.numerator, program.time_signature.denominator
+                program.time_signature.numerator,
+                program.time_signature.denominator
             )
         else:
             self.set_time_signature(4, 4)  # Default 4/4 time
@@ -147,7 +153,9 @@ class MIDIGenerator:
             if main_seq:
                 self.generate_sequence(main_seq)
             else:
-                raise ValueError(f"Sequence '{program.main_sequence}' not found")
+                raise ValueError(
+                    f"Sequence '{program.main_sequence}' not found"
+                )
         elif program.sequences:
             # If no main sequence specified, use the first one
             self.generate_sequence(program.sequences[0])

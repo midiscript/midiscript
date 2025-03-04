@@ -40,7 +40,11 @@ class Lexer:
         self.current = 0
         self.line = 1
         self.column = 1
-        self.current_char = self.source[0] if source else None
+        self.current_char = (
+            self.source[self.current]
+            if self.current < len(self.source)
+            else None
+        )
         self.last_token_type: Optional[TokenType] = None
 
     def error(self) -> None:
@@ -57,7 +61,9 @@ class Lexer:
         else:
             self.column += 1
         self.current_char = (
-            self.source[self.current] if self.current < len(self.source) else None
+            self.source[self.current]
+            if self.current < len(self.source)
+            else None
         )
         return self.current_char
 
@@ -129,7 +135,11 @@ class Lexer:
         }
 
         # Check if it's a note (e.g., C4, D#3, Bb4)
-        if len(result) >= 2 and result[0].upper() in "ABCDEFG" and result[-1].isdigit():
+        if (
+            len(result) >= 2
+            and result[0].upper() in "ABCDEFG"
+            and result[-1].isdigit()
+        ):
             token = Token(TokenType.NOTE, result, self.line, start_column)
         else:
             token = Token(
@@ -150,7 +160,12 @@ class Lexer:
 
             if self.current_char == "\n":
                 self.advance()
-                token = Token(TokenType.NEWLINE, "\n", self.line - 1, self.column)
+                token = Token(
+                    TokenType.NEWLINE,
+                    "\n",
+                    self.line - 1,
+                    self.column
+                )
                 self.last_token_type = token.type
                 return token
 
@@ -170,25 +185,45 @@ class Lexer:
 
             if self.current_char == "{":
                 self.advance()
-                token = Token(TokenType.LBRACE, "{", self.line, self.column - 1)
+                token = Token(
+                    TokenType.LBRACE,
+                    "{",
+                    self.line,
+                    self.column - 1
+                )
                 self.last_token_type = token.type
                 return token
 
             if self.current_char == "}":
                 self.advance()
-                token = Token(TokenType.RBRACE, "}", self.line, self.column - 1)
+                token = Token(
+                    TokenType.RBRACE,
+                    "}",
+                    self.line,
+                    self.column - 1
+                )
                 self.last_token_type = token.type
                 return token
 
             if self.current_char == "[":
                 self.advance()
-                token = Token(TokenType.LBRACKET, "[", self.line, self.column - 1)
+                token = Token(
+                    TokenType.LBRACKET,
+                    "[",
+                    self.line,
+                    self.column - 1
+                )
                 self.last_token_type = token.type
                 return token
 
             if self.current_char == "]":
                 self.advance()
-                token = Token(TokenType.RBRACKET, "]", self.line, self.column - 1)
+                token = Token(
+                    TokenType.RBRACKET,
+                    "]",
+                    self.line,
+                    self.column - 1
+                )
                 self.last_token_type = token.type
                 return token
 
