@@ -1,5 +1,7 @@
 midiutil>=1.2.1
 pytest>=7.0.0
-flake8>=4.0.0
-black>=22.0.0
-mypy>=0.950 
+pytest-cov>=4.0.0
+flake8>=6.0.0
+black>=23.0.0
+mypy>=1.0.0
+types-setuptools>=67.0.0 
