@@ -86,7 +86,9 @@ class Lexer:
         if self.current_char == "/":
             # If we're after a 'time' keyword, treat as separate tokens
             if self.last_token_type == TokenType.TIME:
-                return Token(TokenType.NUMBER, result, self.line, start_column)
+                token = Token(TokenType.NUMBER, result, self.line, start_column)
+                self.last_token_type = token.type
+                return token
 
             # Otherwise, it's a duration
             result += self.current_char
@@ -97,9 +99,13 @@ class Lexer:
                 result += self.current_char
                 self.advance()
 
-            return Token(TokenType.DURATION, result, self.line, start_column)
+            token = Token(TokenType.DURATION, result, self.line, start_column)
+            self.last_token_type = token.type
+            return token
 
-        return Token(TokenType.NUMBER, result, self.line, start_column)
+        token = Token(TokenType.NUMBER, result, self.line, start_column)
+        self.last_token_type = token.type
+        return token
 
     def identifier(self) -> Token:
         result = ""
@@ -157,9 +163,7 @@ class Lexer:
                 continue
 
             if self.current_char.isdigit():
-                token = self.number()
-                self.last_token_type = token.type
-                return token
+                return self.number()
 
             if self.current_char.isalpha() or self.current_char in "#b_":
                 return self.identifier()

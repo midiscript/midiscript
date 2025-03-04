@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Optional, Union
+from typing import List, Optional, Union, cast
 from .lexer import Token, TokenType
 
 
@@ -83,7 +83,9 @@ class Parser:
 
     def is_at_end(self) -> bool:
         token = self.peek()
-        return token is not None and token.type == TokenType.EOF
+        if token is None:
+            return True
+        return token.type == TokenType.EOF
 
     def match(self, *types: TokenType) -> bool:
         for type in types:
@@ -160,7 +162,8 @@ class Parser:
                 token = self.peek()
                 if token is not None:
                     raise SyntaxError(
-                        f"Expected note in chord at line {token.line}, column {token.column}"
+                        f"Expected note in chord at line {token.line}, "
+                        f"column {token.column}"
                     )
                 else:
                     raise SyntaxError("Unexpected end of input in chord")
@@ -182,6 +185,8 @@ class Parser:
 
         token = self.peek()
         if token is not None:
-            raise SyntaxError(f"{message} at line {token.line}, column {token.column}")
+            raise SyntaxError(
+                f"{message} at line {token.line}, column {token.column}"
+            )
         else:
             raise SyntaxError(f"{message} at end of input")
