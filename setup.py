@@ -11,8 +11,8 @@ setup(
         "midiutil>=1.2.1",
     ],
     entry_points={
-        'console_scripts': [
-            'midiscript=midiscript.cli:main',
+        "console_scripts": [
+            "midiscript=midiscript.cli:main",
         ],
     },
     classifiers=[

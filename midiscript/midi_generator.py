@@ -2,20 +2,36 @@ from typing import Dict, List, Optional, Set
 from midiutil import MIDIFile
 from fractions import Fraction
 from .parser import (
-    Program, Note, Chord, Rest, Sequence, SequenceRef,
-    TempoChange, TimeSignature
+    Program,
+    Note,
+    Chord,
+    Rest,
+    Sequence,
+    SequenceRef,
+    TempoChange,
+    TimeSignature,
 )
 
 
 class MIDIGenerator:
     NOTE_MAP = {
-        'C': 60, 'C#': 61, 'Db': 61,
-        'D': 62, 'D#': 63, 'Eb': 63,
-        'E': 64,
-        'F': 65, 'F#': 66, 'Gb': 66,
-        'G': 67, 'G#': 68, 'Ab': 68,
-        'A': 69, 'A#': 70, 'Bb': 70,
-        'B': 71
+        "C": 60,
+        "C#": 61,
+        "Db": 61,
+        "D": 62,
+        "D#": 63,
+        "Eb": 63,
+        "E": 64,
+        "F": 65,
+        "F#": 66,
+        "Gb": 66,
+        "G": 67,
+        "G#": 68,
+        "Ab": 68,
+        "A": 69,
+        "A#": 70,
+        "Bb": 70,
+        "B": 71,
     }
 
     def __init__(self):
@@ -32,9 +48,7 @@ class MIDIGenerator:
         self.midi.addTempo(0, self.time, tempo)
 
     def set_time_signature(self, numerator: int, denominator: int):
-        self.midi.addTimeSignature(
-            0, self.time, numerator, denominator, 24, 8
-        )
+        self.midi.addTimeSignature(0, self.time, numerator, denominator, 24, 8)
 
     def note_to_midi_number(self, note_name: str) -> int:
         # Split note into name and octave (e.g., 'C4' -> 'C', 4)
@@ -42,17 +56,17 @@ class MIDIGenerator:
             name, octave = note_name[0], int(note_name[1])
         else:
             name, octave = note_name[:2], int(note_name[2])
-        
+
         # Get base MIDI number for note name
         base = self.NOTE_MAP[name]
-        
+
         # Adjust for octave (middle C is C4)
         return base + (octave - 4) * 12
 
     def duration_to_beats(self, duration: str) -> float:
         # Convert duration string (e.g., '1/4') to float
-        if '/' in duration:
-            num, denom = map(int, duration.split('/'))
+        if "/" in duration:
+            num, denom = map(int, duration.split("/"))
             return float(Fraction(num, denom))
         return float(duration)
 
@@ -60,27 +74,20 @@ class MIDIGenerator:
         midi_number = self.note_to_midi_number(note.name)
         duration = self.duration_to_beats(note.duration)
         velocity = note.velocity or self.current_velocity
-        
+
         self.midi.addNote(
-            0,  # track
-            0,  # channel
-            midi_number,
-            self.time,
-            duration,
-            velocity
+            0, 0, midi_number, self.time, duration, velocity  # track  # channel
         )
         self.time += duration
 
     def add_chord(self, chord: Chord):
         duration = self.duration_to_beats(chord.duration)
         velocity = chord.velocity or self.current_velocity
-        
+
         for note_name in chord.notes:
             midi_number = self.note_to_midi_number(note_name)
-            self.midi.addNote(
-                0, 0, midi_number, self.time, duration, velocity
-            )
-            
+            self.midi.addNote(0, 0, midi_number, self.time, duration, velocity)
+
         self.time += duration
 
     def add_rest(self, rest: Rest):
@@ -92,9 +99,9 @@ class MIDIGenerator:
             raise ValueError(
                 f"Circular reference detected in sequence '{sequence.name}'"
             )
-            
+
         self.sequence_stack.add(sequence.name)
-        
+
         try:
             for event in sequence.events:
                 if isinstance(event, Note):
@@ -120,36 +127,33 @@ class MIDIGenerator:
         self.midi = MIDIFile(1)
         self.sequences = {seq.name: seq for seq in program.sequences}
         self.sequence_stack = set()
-        
+
         # Set initial tempo and time signature
         if program.tempo:
             self.set_tempo(program.tempo.value)
         else:
             self.set_tempo(120)  # Default tempo
-            
+
         if program.time_signature:
             self.set_time_signature(
-                program.time_signature.numerator,
-                program.time_signature.denominator
+                program.time_signature.numerator, program.time_signature.denominator
             )
         else:
             self.set_time_signature(4, 4)  # Default 4/4 time
-        
+
         # Find main sequence
         if program.main_sequence:
             main_seq = self.sequences.get(program.main_sequence)
             if main_seq:
                 self.generate_sequence(main_seq)
             else:
-                raise ValueError(
-                    f"Sequence '{program.main_sequence}' not found"
-                )
+                raise ValueError(f"Sequence '{program.main_sequence}' not found")
         elif program.sequences:
             # If no main sequence specified, use the first one
             self.generate_sequence(program.sequences[0])
-        
+
         # Convert to bytes
-        with open('temp.mid', 'wb') as f:
+        with open("temp.mid", "wb") as f:
             self.midi.writeFile(f)
-        with open('temp.mid', 'rb') as f:
-            return f.read() 
+        with open("temp.mid", "rb") as f:
+            return f.read()
