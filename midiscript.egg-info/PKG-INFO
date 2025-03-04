@@ -1,7 +1,0 @@
-Metadata-Version: 2.1
-Name: midiscript
-Version: 0.1.0
-Summary: Programming language for musicians
-Author: arsnovo
-Requires-Python: >=3.6
-License-File: LICENSE
