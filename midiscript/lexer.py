@@ -27,18 +27,20 @@ class TokenType(Enum):
 @dataclass
 class Token:
     type: TokenType
-    value: str
+    lexeme: str
     line: int
     column: int
 
 
 class Lexer:
-    def __init__(self, text: str):
-        self.text = text
-        self.pos = 0
+    def __init__(self, source: str):
+        self.source = source
+        self.tokens: List[Token] = []
+        self.start = 0
+        self.current = 0
         self.line = 1
         self.column = 1
-        self.current_char = self.text[0] if text else None
+        self.current_char = self.source[0] if source else None
         self.last_token_type = None
 
     def error(self):
@@ -48,13 +50,14 @@ class Lexer:
         )
 
     def advance(self):
-        self.pos += 1
+        self.current += 1
         if self.current_char == "\n":
             self.line += 1
             self.column = 1
         else:
             self.column += 1
-        self.current_char = self.text[self.pos] if self.pos < len(self.text) else None
+        self.current_char = self.source[self.current] if self.current < len(self.source) else None
+        return self.current_char
 
     def skip_whitespace(self):
         while (
@@ -145,8 +148,8 @@ class Lexer:
 
             if (
                 self.current_char == "/"
-                and self.pos + 1 < len(self.text)
-                and self.text[self.pos + 1] == "/"
+                and self.current + 1 < len(self.source)
+                and self.source[self.current + 1] == "/"
             ):
                 self.skip_comment()
                 continue
@@ -196,10 +199,52 @@ class Lexer:
         return token
 
     def tokenize(self) -> List[Token]:
-        tokens = []
-        while True:
-            token = self.get_next_token()
-            tokens.append(token)
-            if token.type == TokenType.EOF:
-                break
-        return tokens
+        while not self.is_at_end():
+            self.start = self.current
+            self.scan_token()
+        return self.tokens
+
+    def scan_token(self) -> None:
+        c = self.advance()
+        token_type: Optional[TokenType] = None
+
+        if c.isspace():
+            if c == '\n':
+                self.line += 1
+                self.column = 1
+            else:
+                self.column += 1
+            return
+
+        if c.isdigit():
+            token_type = self.number().type
+        elif c.isalpha() or c in "#b_":
+            token_type = self.identifier().type
+        elif c == "{":
+            token_type = TokenType.LBRACE
+        elif c == "}":
+            token_type = TokenType.RBRACE
+        elif c == "[":
+            token_type = TokenType.LBRACKET
+        elif c == "]":
+            token_type = TokenType.RBRACKET
+        elif c == "/":
+            token_type = TokenType.SLASH
+        elif c == "\n":
+            token_type = TokenType.NEWLINE
+        else:
+            self.error()
+
+        if token_type:
+            self.add_token(token_type)
+
+    def add_token(self, type: TokenType) -> None:
+        text = self.source[self.start:self.current]
+        self.tokens.append(Token(type, text, self.line, self.column))
+        self.column += len(text)
+
+    def is_at_end(self) -> bool:
+        return self.current >= len(self.source)
+
+    def peek(self):
+        return self.source[self.current] if self.current < len(self.source) else None
