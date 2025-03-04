@@ -66,9 +66,7 @@ class Parser:
         token = self.peek()
         if token is None:
             raise Exception(f"{message} at end of input")
-        raise Exception(
-            f"{message} at line {token.line}, column {token.column}"
-        )
+        raise Exception(f"{message} at line {token.line}, column {token.column}")
 
     def advance(self) -> Token:
         if not self.is_at_end():
@@ -150,10 +148,7 @@ class Parser:
         self.sequences.append(Sequence(name.lexeme, events))
 
     def note(self) -> Note:
-        duration = self.consume(
-            TokenType.DURATION,
-            "Expected duration after note."
-        )
+        duration = self.consume(TokenType.DURATION, "Expected duration after note.")
         return Note(
             self.previous().lexeme,
             duration.lexeme,
@@ -175,17 +170,11 @@ class Parser:
                     raise SyntaxError("Unexpected end of input in chord")
 
         self.consume(TokenType.RBRACKET, "Expected ']' after chord notes.")
-        duration = self.consume(
-            TokenType.DURATION,
-            "Expected duration after chord."
-        )
+        duration = self.consume(TokenType.DURATION, "Expected duration after chord.")
         return Chord(notes, duration.lexeme)
 
     def rest(self) -> Rest:
-        duration = self.consume(
-            TokenType.DURATION,
-            "Expected duration after rest."
-        )
+        duration = self.consume(TokenType.DURATION, "Expected duration after rest.")
         return Rest(duration.lexeme)
 
     def sequence_ref(self) -> SequenceRef:
@@ -197,8 +186,6 @@ class Parser:
 
         token = self.peek()
         if token is not None:
-            raise SyntaxError(
-                f"{message} at line {token.line}, column {token.column}"
-            )
+            raise SyntaxError(f"{message} at line {token.line}, column {token.column}")
         else:
             raise SyntaxError(f"{message} at end of input")
