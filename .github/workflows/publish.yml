@@ -41,8 +41,5 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
       shell: bash
       run: |
-        if [ -z "$TWINE_PASSWORD" ]; then
-          echo "Error: PYPI_API_TOKEN secret is not set"
-          exit 1
-        fi
+        [ -z "$TWINE_PASSWORD" ] && { echo "Error: PYPI_API_TOKEN secret is not set"; exit 1; }
         twine upload dist/*
